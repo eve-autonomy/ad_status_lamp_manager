@@ -46,5 +46,5 @@ The lighting pattern is defined as follows.
 ## Node Graph
 ![node graph](http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/eve-autonomy/ad_status_lamp_manager/docs/node_graph.pu)
 
-## Parameter discription
+## Parameter description
 This node has no parameters.
