@@ -18,7 +18,7 @@ Lighting patterns are defined as follows;
     </tr>
     <tr>
       <td>Preparing for autonomous driving</td>
-      <td>Flash twice a second</td>
+      <td>Repeat the following;<br>Blinks twice at 0.2 second intervals, and the second light off for 1.5 seconds.</td>
     </tr>
     <tr>
       <td>Autonomous driving is available</td>
