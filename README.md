@@ -37,7 +37,7 @@ Lighting patterns are defined as follows;
 
 ## Input and Output
 - input
-  - from [autoware_state_machine](https://github.com/eve-autonomy/autoware_state_machine)
+  - from [autoware_state_machine](https://github.com/eve-autonomy/autoware_state_machine/)
     - `/autoware_state_machine/state` : State of the system.
 - output
   - to [dio_ros_driver](https://github.com/tier4/dio_ros_driver/)
