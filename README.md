@@ -30,7 +30,7 @@ Lighting patterns are defined as follows;
     </tr>
     <tr>
       <td>Power off</td>
-      <td>Keeps going off</td>
+      <td>Off</td>
     </tr>
   </tbody>
 </table>
