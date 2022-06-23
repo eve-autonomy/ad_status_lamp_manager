@@ -40,7 +40,7 @@ Lighting patterns are defined as follows;
   - from [autoware_state_machine](https://github.com/eve-autonomy/autoware_state_machine)
     - `/autoware_state_machine/state` : State of the system.
 - output
-  - to [dio_ros_driver](https://github.com/tier4/dio_ros_driver)
+  - to [dio_ros_driver](https://github.com/tier4/dio_ros_driver/)
     - `/dio/dout0` : GPIO output topic. (this topic is remapping from /ad_status_lamp_out)
 
 ## Node Graph
