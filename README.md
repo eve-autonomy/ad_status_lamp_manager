@@ -13,7 +13,7 @@ Lighting patterns are defined as follows;
   </thead>
   <tbody>
     <tr>
-      <td>During system startup</td>
+      <td>System starting up</td>
       <td>Blink once every second</td>
     </tr>
     <tr>
