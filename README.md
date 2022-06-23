@@ -3,7 +3,7 @@
 ## Overview
 By switching the lighting pattern of the lamp, this node informs the transport manager of the system status.
 
-The lighting pattern is defined as follows.
+Lighting patterns are defined as follows;
 <table>
   <thead>
     <tr>
