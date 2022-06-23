@@ -1,7 +1,7 @@
 # Status lamp manager for autonomous driving
 
 ## Overview
-By switching the lighting pattern of the lamp, this node informs the transport manager of the system status.
+This node changes the lighting pattern of the lamp for the operation manager to check the system status.
 
 Lighting patterns are defined as follows;
 <table>
@@ -18,15 +18,15 @@ Lighting patterns are defined as follows;
     </tr>
     <tr>
       <td>Preparing for autonomous driving</td>
-      <td>Flashes twice quickly on a regular basis</td>
+      <td>Flash twice a second</td>
     </tr>
     <tr>
       <td>Autonomous driving is available</td>
-      <td>Keeps lighting</td>
+      <td>Light up</td>
     </tr>
     <tr>
-      <td>During system shutdown</td>
-      <td>Blinks every second</td>
+      <td>System shutting down</td>
+      <td>Blink once every second</td>
     </tr>
     <tr>
       <td>Power off</td>
