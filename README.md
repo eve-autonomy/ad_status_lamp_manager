@@ -29,7 +29,7 @@ Lighting patterns are defined as follows;
       <td>Blinks every second</td>
     </tr>
     <tr>
-      <td>Completes system shutdown</td>
+      <td>Power off</td>
       <td>Keeps going off</td>
     </tr>
   </tbody>
