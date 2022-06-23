@@ -14,7 +14,7 @@ Lighting patterns are defined as follows;
   <tbody>
     <tr>
       <td>During system startup</td>
-      <td>Blinks every second</td>
+      <td>Blink once every second</td>
     </tr>
     <tr>
       <td>Preparing for autonomous driving</td>
