@@ -4,36 +4,14 @@
 This node changes the lighting pattern of the lamp for the operation manager to check the system status.
 
 Lighting patterns are defined as follows;
-<table>
-  <thead>
-    <tr>
-      <th scope="col">system status</th>
-	    <th scope="col">lighting pattern</th>
-	  </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>System starting up</td>
-      <td>Blink once every second</td>
-    </tr>
-    <tr>
-      <td>Preparing for autonomous driving</td>
-      <td>Repeat the following;<br>Blinks twice at 0.2 second intervals, and the second light off for 1.5 seconds.</td>
-    </tr>
-    <tr>
-      <td>Autonomous driving is available</td>
-      <td>Light up</td>
-    </tr>
-    <tr>
-      <td>System shutting down</td>
-      <td>Blink once every second</td>
-    </tr>
-    <tr>
-      <td>Power off</td>
-      <td>Off</td>
-    </tr>
-  </tbody>
-</table>
+
+|system status|lighting pattern|
+|:------------|:---------------|
+|System starting up|Blink once every second|
+|Preparing for autonomous driving|Repeat the following;<br>Blinks twice at 0.2 second intervals, and the second light off for 1.5 seconds.|
+|Autonomous driving is available|Light up|
+|System shutting down|Blink once every second|
+|Power off|Off|
 
 ## Input and Output
 - input
