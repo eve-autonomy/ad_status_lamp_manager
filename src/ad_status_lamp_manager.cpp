@@ -188,13 +188,14 @@ void AdStatusLampManager::callbackDaignosticsStateMessage(
 {
   auto nodes = msg->nodes;
   if (em_holding_indices_ != std::nullopt) {
-    if (nodes[em_holding_indices_.value()].latch_level == diagnostic_msgs::msg::DiagnosticStatus::ERROR) {
+    // TODO:Ph3にて、levelをlatch_levelに変更
+    if (nodes[em_holding_indices_.value()].level == diagnostic_msgs::msg::DiagnosticStatus::ERROR) {
       em_holding_ = true;
       RCLCPP_INFO_THROTTLE(
         this->get_logger(),
         *this->get_clock(), 1.0,
         "[AdStatusLampManager::callbackDaignosticsStateMessage]/autoware/modes/autonomous latch_level: %u",
-        nodes[em_holding_indices_.value()].latch_level);
+        nodes[em_holding_indices_.value()].level);// TODO:Ph3にて、levelをlatch_levelに変更
     } else {
       em_holding_ = false;
     }
