@@ -83,7 +83,9 @@ public:
   int blink_type_;
   bool active_polarity_;
   uint16_t service_layer_state_;
+  uint16_t pre_service_layer_state_;
   uint16_t control_layer_state_;
+  uint16_t pre_control_layer_state_;
   uint16_t initilization_state_;
   uint16_t routing_state_;
   SoundDoneTuple_t sound_param_;

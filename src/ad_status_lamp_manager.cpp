@@ -76,7 +76,9 @@ AdStatusLampManager::AdStatusLampManager(const rclcpp::NodeOptions & options = r
   active_polarity_ = ACTIVE_POLARITY;
   em_holding_indices_ = std::nullopt;
   service_layer_state_ = autoware_state_machine_msgs::msg::StateMachine::STATE_UNDEFINED;
+  pre_service_layer_state_ = autoware_state_machine_msgs::msg::StateMachine::STATE_UNDEFINED;
   control_layer_state_ = autoware_state_machine_msgs::msg::StateMachine::MANUAL;
+  pre_control_layer_state_ = autoware_state_machine_msgs::msg::StateMachine::MANUAL;
   initilization_state_ = autoware_adapi_v1_msgs::msg::LocalizationInitializationState::UNKNOWN;
   routing_state_ = autoware_adapi_v1_msgs::msg::RouteState::UNKNOWN;
   sound_param_.state = autoware_state_machine_msgs::msg::StateMachine::STATE_UNDEFINED;
@@ -236,6 +238,11 @@ void AdStatusLampManager::publishLampState(const bool value)
 void AdStatusLampManager::lampManager(
   const uint16_t service_layer_state, const uint8_t control_layer_state)
 {
+  if (pre_service_layer_state_ == service_layer_state &&
+      pre_control_layer_state_ == control_layer_state) {
+    return;
+  }
+
   switch (service_layer_state) {
     case autoware_state_machine_msgs::msg::StateMachine::STATE_DURING_WAKEUP:
     case autoware_state_machine_msgs::msg::StateMachine::STATE_DURING_CLOSE:
@@ -266,6 +273,9 @@ void AdStatusLampManager::lampManager(
       }
       break;
   }
+
+  pre_service_layer_state_ = service_layer_state;
+  pre_control_layer_state_ = control_layer_state;
 }
 
 double AdStatusLampManager::getTimerDuration(void)
