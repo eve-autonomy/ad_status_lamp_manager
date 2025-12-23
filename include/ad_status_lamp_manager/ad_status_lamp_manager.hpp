@@ -15,19 +15,39 @@
 #ifndef AD_STATUS_LAMP_MANAGER__AD_STATUS_LAMP_MANAGER_HPP_
 #define AD_STATUS_LAMP_MANAGER__AD_STATUS_LAMP_MANAGER_HPP_
 
+#include <cstdint>
+#include <functional>
+#include <optional>
+#include <string>
+#include <vector>
 #include "rclcpp/rclcpp.hpp"
-#include "autoware_state_machine_msgs/msg/state_machine.hpp"
-#include "autoware_state_machine_msgs/msg/state_sound_done.hpp"
 #include "dio_ros_driver/msg/dio_port.hpp"
 #include <autoware_adapi_v1_msgs/msg/localization_initialization_state.hpp>
 #include <autoware_adapi_v1_msgs/msg/route_state.hpp>
-#include <autoware_adapi_v1_msgs/msg/diag_graph_status.hpp>
-#include <autoware_adapi_v1_msgs/msg/diag_graph_struct.hpp>
 #include <autoware_adapi_v1_msgs/msg/operation_mode_state.hpp>
-#include <diagnostic_msgs/msg/diagnostic_status.hpp>
+#include <autoware_system_msgs/msg/hazard_status_stamped.hpp>
 
 namespace ad_status_lamp_manager
 {
+
+// Local constants to replace autoware_state_machine_msgs::msg::StateMachine
+namespace ServiceLayerState
+{
+  constexpr uint16_t STATE_UNDEFINED = 0;
+  constexpr uint16_t STATE_DURING_WAKEUP = 1;
+  constexpr uint16_t STATE_DURING_CLOSE = 2;
+  constexpr uint16_t STATE_CHECK_NODE_ALIVE = 3;
+  constexpr uint16_t STATE_DURING_RECEIVE_ROUTE = 4;
+  constexpr uint16_t STATE_EMERGENCY_STOP = 5;
+  constexpr uint16_t STATE_OTHER = 0xFFFF;
+}  // namespace ServiceLayerState
+
+namespace ControlLayerState
+{
+  constexpr uint8_t MANUAL = 0;
+  constexpr uint8_t AUTO = 1;
+}  // namespace ControlLayerState
+
 class AdStatusLampManager : public rclcpp::Node
 {
 public:
@@ -40,17 +60,22 @@ public:
     BLINK_SLOW
   };
 
+  // 状態遷移条件の型定義
+  using StateCondition = std::function<bool()>;
+  struct StateTransition
+  {
+    StateCondition condition;
+    uint16_t state;
+  };
+
   // Publisher
   rclcpp::Publisher<dio_ros_driver::msg::DIOPort>::SharedPtr pub_ad_status_lamp_;
 
   // Subscriber
-  rclcpp::Subscription<autoware_state_machine_msgs::msg::StateMachine>::SharedPtr sub_state_;
   rclcpp::Subscription<autoware_adapi_v1_msgs::msg::LocalizationInitializationState>::SharedPtr sub_initilization_state_;
   rclcpp::Subscription<autoware_adapi_v1_msgs::msg::RouteState>::SharedPtr sub_routing_state_;
-  rclcpp::Subscription<autoware_state_machine_msgs::msg::StateSoundDone>::SharedPtr sub_sound_state_;
-  rclcpp::Subscription<autoware_adapi_v1_msgs::msg::DiagGraphStatus>::SharedPtr sub_daignostics_status_;
-  rclcpp::Subscription<autoware_adapi_v1_msgs::msg::DiagGraphStruct>::SharedPtr sub_daignostics_struct_;
   rclcpp::Subscription<autoware_adapi_v1_msgs::msg::OperationModeState>::SharedPtr sub_operation_mode_state_;
+  rclcpp::Subscription<autoware_system_msgs::msg::HazardStatusStamped>::SharedPtr sub_hazard_status_;
 
   #define BLINK_FAST_ON_DURATION (0.2)
   #define BLINK_FAST_OFF_DURATION (0.2)
@@ -71,12 +96,6 @@ public:
     BLINK_SLOW_ON_DURATION
   };
 
-  typedef struct tuple
-  {
-    uint16_t state;
-    bool done;
-  } SoundDoneTuple_t;
-
   rclcpp::TimerBase::SharedPtr blink_timer_;
   rclcpp::TimerBase::SharedPtr init_timer_;
   uint64_t blink_sequence_;
@@ -88,10 +107,11 @@ public:
   uint16_t pre_control_layer_state_;
   uint16_t initilization_state_;
   uint16_t routing_state_;
-  SoundDoneTuple_t sound_param_;
-  std::optional<uint16_t> em_holding_indices_;
   bool em_holding_;
   autoware_adapi_v1_msgs::msg::OperationModeState operation_state_;
+
+  // 状態遷移テーブル（優先順位順）
+  std::vector<StateTransition> state_transitions_;
 
   void publishLampState(const bool value);
   void lampManager(const uint16_t service_layer_state, const uint8_t control_layer_state);
@@ -103,16 +123,14 @@ public:
     const autoware_adapi_v1_msgs::msg::LocalizationInitializationState::ConstSharedPtr msg);
   void callbackRoutingStateMessage(
     const autoware_adapi_v1_msgs::msg::RouteState::ConstSharedPtr msg);
-  void callbackSoundDoneMessage(
-    const autoware_state_machine_msgs::msg::StateSoundDone::ConstSharedPtr msg_ptr);
-  void callbackDaignosticsStructMessage(
-    const autoware_adapi_v1_msgs::msg::DiagGraphStruct::ConstSharedPtr msg);
-  void callbackDaignosticsStateMessage(
-    const autoware_adapi_v1_msgs::msg::DiagGraphStatus::ConstSharedPtr msg);
   void callbackOperationModeStateMessage(
     const autoware_adapi_v1_msgs::msg::OperationModeState::ConstSharedPtr msg);
+  void callbackHazardStatusMessage(
+    const autoware_system_msgs::msg::HazardStatusStamped::ConstSharedPtr msg);
   void changeState(void);
   void initOnTimer(void);
+  static std::string getServiceLayerStateName(uint16_t state);
+  static std::string getControlLayerStateName(uint16_t state);
 };
 
 }  // namespace ad_status_lamp_manager
