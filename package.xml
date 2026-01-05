@@ -28,12 +28,14 @@
 
   <depend>rclcpp</depend>
   <depend>dio_ros_driver</depend>
-  <depend>autoware_state_machine_msgs</depend>
   <depend>rclcpp_components</depend>
   <depend>autoware_adapi_v1_msgs</depend>
-  <depend>diagnostic_msgs</depend>
+  <depend>autoware_system_msgs</depend>
 
   <depend>builtin_interfaces</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_cmake_ros</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

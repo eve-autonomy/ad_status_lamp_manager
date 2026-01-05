@@ -37,6 +37,17 @@ rclcpp_components_register_node(ad_status_lamp_manager
   PLUGIN "ad_status_lamp_manager::AdStatusLampManager"
   EXECUTABLE ad_status_lamp_manager_node)
 
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+
+  ament_add_ros_isolated_gtest(test_ad_status_lamp_manager
+    test/test_ad_status_lamp_manager.cpp
+  )
+  target_link_libraries(test_ad_status_lamp_manager
+    ad_status_lamp_manager
+  )
+endif()
 
 ament_auto_package(INSTALL_TO_SHARE
   launch

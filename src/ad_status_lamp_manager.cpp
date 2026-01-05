@@ -38,25 +38,11 @@ AdStatusLampManager::AdStatusLampManager(const rclcpp::NodeOptions & options = r
     std::bind(&AdStatusLampManager::callbackRoutingStateMessage, this, std::placeholders::_1)
   );
 
-  // ad_sound_manager sound done state
-  sub_sound_state_ = this->create_subscription<autoware_state_machine_msgs::msg::StateSoundDone>(
-    "/autoware_state_machine/state_sound_done",
+  // HazardStatus for EM Holding
+  sub_hazard_status_ = this->create_subscription<autoware_system_msgs::msg::HazardStatusStamped>(
+    "/system/emergency/hazard_status",
     rclcpp::QoS{3}.transient_local(),
-    std::bind(&AdStatusLampManager::callbackSoundDoneMessage, this, std::placeholders::_1)
-  );
-
-  // daignostics struct for EM Holding
-  sub_daignostics_struct_ = this->create_subscription<autoware_adapi_v1_msgs::msg::DiagGraphStruct>(
-    "/api/system/diagnostics/struct",
-    rclcpp::QoS{3}.transient_local(),
-    std::bind(&AdStatusLampManager::callbackDaignosticsStructMessage, this, std::placeholders::_1)
-  );
-
-  // daignostics status for EM Holding
-  sub_daignostics_status_ = this->create_subscription<autoware_adapi_v1_msgs::msg::DiagGraphStatus>(
-    "/api/system/diagnostics/status",
-    rclcpp::QoS{3}.transient_local(),
-    std::bind(&AdStatusLampManager::callbackDaignosticsStateMessage, this, std::placeholders::_1)
+    std::bind(&AdStatusLampManager::callbackHazardStatusMessage, this, std::placeholders::_1)
   );
 
   // OperationModeState
@@ -74,15 +60,12 @@ AdStatusLampManager::AdStatusLampManager(const rclcpp::NodeOptions & options = r
 
   // Set Initial Value
   active_polarity_ = ACTIVE_POLARITY;
-  em_holding_indices_ = std::nullopt;
-  service_layer_state_ = autoware_state_machine_msgs::msg::StateMachine::STATE_UNDEFINED;
-  pre_service_layer_state_ = autoware_state_machine_msgs::msg::StateMachine::STATE_UNDEFINED;
-  control_layer_state_ = autoware_state_machine_msgs::msg::StateMachine::MANUAL;
-  pre_control_layer_state_ = autoware_state_machine_msgs::msg::StateMachine::MANUAL;
+  service_layer_state_ = ServiceLayerState::STATE_UNDEFINED;
+  pre_service_layer_state_ = ServiceLayerState::STATE_UNDEFINED;
+  control_layer_state_ = ControlLayerState::MANUAL;
+  pre_control_layer_state_ = ControlLayerState::MANUAL;
   initilization_state_ = autoware_adapi_v1_msgs::msg::LocalizationInitializationState::UNKNOWN;
   routing_state_ = autoware_adapi_v1_msgs::msg::RouteState::UNKNOWN;
-  sound_param_.state = autoware_state_machine_msgs::msg::StateMachine::STATE_UNDEFINED;
-  sound_param_.done = false;
   em_holding_ = false;
   operation_state_.is_autoware_control_enabled = false;
   operation_state_.is_in_transition = false;
@@ -90,6 +73,33 @@ AdStatusLampManager::AdStatusLampManager(const rclcpp::NodeOptions & options = r
   operation_state_.is_autonomous_mode_available = false;
   operation_state_.is_local_mode_available = false;
   operation_state_.is_remote_mode_available = false;
+
+  // 状態遷移テーブルの初期化（優先順位順に評価される）
+  state_transitions_ = {
+    {
+      [this]() { return service_layer_state_ == ServiceLayerState::STATE_UNDEFINED; },
+      ServiceLayerState::STATE_CHECK_NODE_ALIVE
+    },
+    {
+      [this]() { return em_holding_; },
+      ServiceLayerState::STATE_EMERGENCY_STOP
+    },
+    {
+      [this]() {
+        return routing_state_ == autoware_adapi_v1_msgs::msg::RouteState::UNSET ||
+               routing_state_ == autoware_adapi_v1_msgs::msg::RouteState::CHANGING ||
+               routing_state_ == autoware_adapi_v1_msgs::msg::RouteState::ARRIVED;
+      },
+      ServiceLayerState::STATE_DURING_RECEIVE_ROUTE
+    },
+    {
+      [this]() {
+        return initilization_state_ == autoware_adapi_v1_msgs::msg::LocalizationInitializationState::INITIALIZING &&
+               (operation_state_.is_stop_mode_available || operation_state_.is_local_mode_available);
+      },
+      ServiceLayerState::STATE_DURING_WAKEUP
+    }
+  };
 
   // Timer
   // Lamp on/off
@@ -152,59 +162,18 @@ void AdStatusLampManager::callbackRoutingStateMessage(
   lampManager(service_layer_state_, control_layer_state_);
 }
 
-void AdStatusLampManager::callbackSoundDoneMessage(
-  const autoware_state_machine_msgs::msg::StateSoundDone::ConstSharedPtr msg_ptr)
+void AdStatusLampManager::callbackHazardStatusMessage(
+  const autoware_system_msgs::msg::HazardStatusStamped::ConstSharedPtr msg)
 {
+  em_holding_ = msg->status.emergency_holding;
   RCLCPP_INFO_THROTTLE(
     this->get_logger(),
     *this->get_clock(), 1.0,
-    "[AdStatusLampManager::callbackSoundDoneMessage]Sound Done %d, %d ",
-      msg_ptr->state, msg_ptr->done);
-
-  sound_param_.state = msg_ptr->state;
-  sound_param_.done = msg_ptr->done;
+    "[AdStatusLampManager::callbackHazardStatusMessage]emergency_holding: %s",
+    em_holding_ ? "true" : "false");
 
   changeState();
   lampManager(service_layer_state_, control_layer_state_);
-}
-
-void AdStatusLampManager::callbackDaignosticsStructMessage(
-  const autoware_adapi_v1_msgs::msg::DiagGraphStruct::ConstSharedPtr msg)
-{
-  auto nodes = msg->nodes;
-
-  for (uint16_t i = 0; i < nodes.size(); ++i) {
-    if (nodes[i].path == "/autoware/modes/autonomous") {
-      em_holding_indices_ = i;
-      RCLCPP_INFO_THROTTLE(
-        this->get_logger(),
-        *this->get_clock(), 1.0,
-        "[AdStatusLampManager::callbackDaignosticsStructMessage]daignostics_graph /autoware/modes/autonomous index: %u", i);
-      break;
-    }
-  }
-}
-
-void AdStatusLampManager::callbackDaignosticsStateMessage(
-  const autoware_adapi_v1_msgs::msg::DiagGraphStatus::ConstSharedPtr msg)
-{
-  auto nodes = msg->nodes;
-  if (em_holding_indices_ != std::nullopt) {
-    // TODO:Ph3にて、levelをlatch_levelに変更
-    if (nodes[em_holding_indices_.value()].level == diagnostic_msgs::msg::DiagnosticStatus::ERROR) {
-      em_holding_ = true;
-      RCLCPP_INFO_THROTTLE(
-        this->get_logger(),
-        *this->get_clock(), 1.0,
-        "[AdStatusLampManager::callbackDaignosticsStateMessage]/autoware/modes/autonomous latch_level: %u",
-        nodes[em_holding_indices_.value()].level);// TODO:Ph3にて、levelをlatch_levelに変更
-    } else {
-      em_holding_ = false;
-    }
-
-    changeState();
-    lampManager(service_layer_state_, control_layer_state_);
-  }
 }
 
 void AdStatusLampManager::callbackOperationModeStateMessage(
@@ -244,26 +213,26 @@ void AdStatusLampManager::lampManager(
   }
 
   switch (service_layer_state) {
-    case autoware_state_machine_msgs::msg::StateMachine::STATE_DURING_WAKEUP:
-    case autoware_state_machine_msgs::msg::StateMachine::STATE_DURING_CLOSE:
-    case autoware_state_machine_msgs::msg::StateMachine::STATE_CHECK_NODE_ALIVE:
+    case ServiceLayerState::STATE_DURING_WAKEUP:
+    case ServiceLayerState::STATE_DURING_CLOSE:
+    case ServiceLayerState::STATE_CHECK_NODE_ALIVE:
       // slow blink
       startLampBlinkOperation(BLINK_SLOW);
       break;
 
-    case autoware_state_machine_msgs::msg::StateMachine::STATE_DURING_RECEIVE_ROUTE:
+    case ServiceLayerState::STATE_DURING_RECEIVE_ROUTE:
       // fast blink
       startLampBlinkOperation(BLINK_FAST);
       break;
 
-    case autoware_state_machine_msgs::msg::StateMachine::STATE_EMERGENCY_STOP:
+    case ServiceLayerState::STATE_EMERGENCY_STOP:
       // lamp on
       blink_timer_->cancel();
       publishLampState(true);
       break;
 
     default:
-      if (control_layer_state == autoware_state_machine_msgs::msg::StateMachine::MANUAL) {
+      if (control_layer_state == ControlLayerState::MANUAL) {
         // fast blink
         startLampBlinkOperation(BLINK_FAST);
       } else {
@@ -340,34 +309,61 @@ void AdStatusLampManager::setPeriod(const double new_period)
 
 void AdStatusLampManager::changeState(void)
 {
-  if ((service_layer_state_ == autoware_state_machine_msgs::msg::StateMachine::STATE_UNDEFINED)){
-    // STATE_CHECK_NODE_ALIVE
-    service_layer_state_ = autoware_state_machine_msgs::msg::StateMachine::STATE_CHECK_NODE_ALIVE;
-  } else if (em_holding_ == true) {
-    // STATE_EMERGENCY_STOP
-    service_layer_state_ = autoware_state_machine_msgs::msg::StateMachine::STATE_EMERGENCY_STOP;
-  } else if ((routing_state_ == autoware_adapi_v1_msgs::msg::RouteState::UNSET) ||
-             (routing_state_ == autoware_adapi_v1_msgs::msg::RouteState::CHANGING) ||
-             (routing_state_ == autoware_adapi_v1_msgs::msg::RouteState::ARRIVED)) {
-    // STATE_DURING_RECEIVE_ROUTE
-    service_layer_state_ = autoware_state_machine_msgs::msg::StateMachine::STATE_DURING_RECEIVE_ROUTE;
-  } else if ((initilization_state_ == autoware_adapi_v1_msgs::msg::LocalizationInitializationState::INITIALIZING)
-          && (((operation_state_.is_stop_mode_available == true)
-            || (operation_state_.is_local_mode_available == true))
-            || ((sound_param_.state == autoware_state_machine_msgs::msg::StateMachine::STATE_CHECK_NODE_ALIVE)
-              && (sound_param_.done == true)))) {
-    // STATE_DURING_WAKEUP
-    service_layer_state_ = autoware_state_machine_msgs::msg::StateMachine::STATE_DURING_WAKEUP;
-  } else {
-    // 上記以外
-    service_layer_state_ = 0xFFFF;
+  // 状態遷移テーブルを順番に評価し、最初にマッチした状態を設定
+  service_layer_state_ = ServiceLayerState::STATE_OTHER;
+  for (const auto & transition : state_transitions_) {
+    if (transition.condition()) {
+      service_layer_state_ = transition.state;
+      break;
+    }
   }
 
-  if ((operation_state_.is_stop_mode_available == true) ||
-      (operation_state_.is_local_mode_available == true)) {
-    control_layer_state_ = autoware_state_machine_msgs::msg::StateMachine::MANUAL;
-  } else {
-    control_layer_state_ = autoware_state_machine_msgs::msg::StateMachine::AUTO;
+  // control_layer_state の更新
+  control_layer_state_ = operation_state_.is_autoware_control_enabled
+    ? ControlLayerState::AUTO
+    : ControlLayerState::MANUAL;
+
+  // 状態変化時のログ出力
+  RCLCPP_INFO(
+    this->get_logger(),
+    "[changeState] service_layer_state: %s (%u), control_layer_state: %s (%u)",
+    getServiceLayerStateName(service_layer_state_).c_str(),
+    service_layer_state_,
+    getControlLayerStateName(control_layer_state_).c_str(),
+    control_layer_state_);
+}
+
+std::string AdStatusLampManager::getServiceLayerStateName(uint16_t state)
+{
+  switch (state) {
+    case ServiceLayerState::STATE_UNDEFINED:
+      return "STATE_UNDEFINED";
+    case ServiceLayerState::STATE_DURING_WAKEUP:
+      return "STATE_DURING_WAKEUP";
+    case ServiceLayerState::STATE_DURING_CLOSE:
+      return "STATE_DURING_CLOSE";
+    case ServiceLayerState::STATE_CHECK_NODE_ALIVE:
+      return "STATE_CHECK_NODE_ALIVE";
+    case ServiceLayerState::STATE_DURING_RECEIVE_ROUTE:
+      return "STATE_DURING_RECEIVE_ROUTE";
+    case ServiceLayerState::STATE_EMERGENCY_STOP:
+      return "STATE_EMERGENCY_STOP";
+    case ServiceLayerState::STATE_OTHER:
+      return "STATE_OTHER";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+std::string AdStatusLampManager::getControlLayerStateName(uint16_t state)
+{
+  switch (state) {
+    case ControlLayerState::MANUAL:
+      return "MANUAL";
+    case ControlLayerState::AUTO:
+      return "AUTO";
+    default:
+      return "UNKNOWN";
   }
 }
 }  // namespace ad_status_lamp_manager
