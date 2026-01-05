@@ -41,7 +41,7 @@ AdStatusLampManager::AdStatusLampManager(const rclcpp::NodeOptions & options = r
   // HazardStatus for EM Holding
   sub_hazard_status_ = this->create_subscription<autoware_system_msgs::msg::HazardStatusStamped>(
     "/system/emergency/hazard_status",
-    rclcpp::QoS{3}.transient_local(),
+    rclcpp::QoS{1},
     std::bind(&AdStatusLampManager::callbackHazardStatusMessage, this, std::placeholders::_1)
   );
 
