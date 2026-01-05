@@ -44,7 +44,7 @@ protected:
       "/api/localization/initialization_state", qos);
     pub_route_state_ = node_->create_publisher<RouteState>("/api/routing/state", qos);
     pub_hazard_status_ = node_->create_publisher<HazardStatusStamped>(
-      "/system/emergency/hazard_status", qos);
+      "/system/emergency/hazard_status", rclcpp::QoS(1));
     pub_operation_mode_ = node_->create_publisher<OperationModeState>(
       "/api/operation_mode/state", qos);
 
