@@ -135,12 +135,6 @@ AdStatusLampManager::~AdStatusLampManager()
 void AdStatusLampManager::callbackAutowareInitializationMessage(
   const autoware_adapi_v1_msgs::msg::LocalizationInitializationState::ConstSharedPtr msg)
 {
-  RCLCPP_INFO_THROTTLE(
-    this->get_logger(),
-    *this->get_clock(), 1.0,
-    "[AdStatusLampManager::callbackAutowareInitializationMessage]autoware_state: %u",
-    msg->state);
-
   initilization_state_ = msg->state;
 
   changeState();
@@ -150,12 +144,6 @@ void AdStatusLampManager::callbackAutowareInitializationMessage(
 void AdStatusLampManager::callbackRoutingStateMessage(
   const autoware_adapi_v1_msgs::msg::RouteState::ConstSharedPtr msg)
 {
-  RCLCPP_INFO_THROTTLE(
-    this->get_logger(),
-    *this->get_clock(), 1.0,
-    "[AdStatusLampManager::callbackRoutingStateMessage]routing_state: %u",
-    msg->state);
-
   routing_state_ = msg->state;
 
   changeState();
@@ -166,11 +154,6 @@ void AdStatusLampManager::callbackHazardStatusMessage(
   const autoware_system_msgs::msg::HazardStatusStamped::ConstSharedPtr msg)
 {
   em_holding_ = msg->status.emergency_holding;
-  RCLCPP_INFO_THROTTLE(
-    this->get_logger(),
-    *this->get_clock(), 1.0,
-    "[AdStatusLampManager::callbackHazardStatusMessage]emergency_holding: %s",
-    em_holding_ ? "true" : "false");
 
   changeState();
   lampManager(service_layer_state_, control_layer_state_);
@@ -180,11 +163,6 @@ void AdStatusLampManager::callbackOperationModeStateMessage(
   const autoware_adapi_v1_msgs::msg::OperationModeState::ConstSharedPtr msg)
 {
   operation_state_ = *msg;
-  RCLCPP_INFO_THROTTLE(
-    this->get_logger(),
-    *this->get_clock(), 1.0,
-    "[AdStatusLampManager::callbackOperationModeStateMessage]operation mode: %u",
-      msg->mode);
 
   changeState();
   lampManager(service_layer_state_, control_layer_state_);
@@ -322,15 +300,6 @@ void AdStatusLampManager::changeState(void)
   control_layer_state_ = operation_state_.is_autoware_control_enabled
     ? ControlLayerState::AUTO
     : ControlLayerState::MANUAL;
-
-  // 状態変化時のログ出力
-  RCLCPP_INFO(
-    this->get_logger(),
-    "[changeState] service_layer_state: %s (%u), control_layer_state: %s (%u)",
-    getServiceLayerStateName(service_layer_state_).c_str(),
-    service_layer_state_,
-    getControlLayerStateName(control_layer_state_).c_str(),
-    control_layer_state_);
 }
 
 std::string AdStatusLampManager::getServiceLayerStateName(uint16_t state)
