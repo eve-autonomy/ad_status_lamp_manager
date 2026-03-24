@@ -25,7 +25,7 @@
 #include <autoware_adapi_v1_msgs/msg/localization_initialization_state.hpp>
 #include <autoware_adapi_v1_msgs/msg/route_state.hpp>
 #include <autoware_adapi_v1_msgs/msg/operation_mode_state.hpp>
-#include <autoware_system_msgs/msg/hazard_status_stamped.hpp>
+#include <tier4_external_api_msgs/msg/hazard_status_stamped.hpp>
 
 namespace ad_status_lamp_manager
 {
@@ -75,7 +75,7 @@ public:
   rclcpp::Subscription<autoware_adapi_v1_msgs::msg::LocalizationInitializationState>::SharedPtr sub_initilization_state_;
   rclcpp::Subscription<autoware_adapi_v1_msgs::msg::RouteState>::SharedPtr sub_routing_state_;
   rclcpp::Subscription<autoware_adapi_v1_msgs::msg::OperationModeState>::SharedPtr sub_operation_mode_state_;
-  rclcpp::Subscription<autoware_system_msgs::msg::HazardStatusStamped>::SharedPtr sub_hazard_status_;
+  rclcpp::Subscription<tier4_external_api_msgs::msg::HazardStatusStamped>::SharedPtr sub_hazard_status_;
 
   #define BLINK_FAST_ON_DURATION (0.2)
   #define BLINK_FAST_OFF_DURATION (0.2)
@@ -126,7 +126,7 @@ public:
   void callbackOperationModeStateMessage(
     const autoware_adapi_v1_msgs::msg::OperationModeState::ConstSharedPtr msg);
   void callbackHazardStatusMessage(
-    const autoware_system_msgs::msg::HazardStatusStamped::ConstSharedPtr msg);
+    const tier4_external_api_msgs::msg::HazardStatusStamped::ConstSharedPtr msg);
   void changeState(void);
   void initOnTimer(void);
   static std::string getServiceLayerStateName(uint16_t state);
