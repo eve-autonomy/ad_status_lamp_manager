@@ -19,14 +19,14 @@
 #include <autoware_adapi_v1_msgs/msg/localization_initialization_state.hpp>
 #include <autoware_adapi_v1_msgs/msg/route_state.hpp>
 #include <autoware_adapi_v1_msgs/msg/operation_mode_state.hpp>
-#include <autoware_system_msgs/msg/hazard_status_stamped.hpp>
+#include <tier4_external_api_msgs/msg/hazard_status_stamped.hpp>
 
 #include "ad_status_lamp_manager/ad_status_lamp_manager.hpp"
 
 using LocalizationInitializationState = autoware_adapi_v1_msgs::msg::LocalizationInitializationState;
 using RouteState = autoware_adapi_v1_msgs::msg::RouteState;
 using OperationModeState = autoware_adapi_v1_msgs::msg::OperationModeState;
-using HazardStatusStamped = autoware_system_msgs::msg::HazardStatusStamped;
+using HazardStatusStamped = tier4_external_api_msgs::msg::HazardStatusStamped;
 using DIOPort = dio_ros_driver::msg::DIOPort;
 
 class AdStatusLampManagerTest : public ::testing::Test
@@ -44,7 +44,7 @@ protected:
       "/api/localization/initialization_state", qos);
     pub_route_state_ = node_->create_publisher<RouteState>("/api/routing/state", qos);
     pub_hazard_status_ = node_->create_publisher<HazardStatusStamped>(
-      "/system/emergency/hazard_status", rclcpp::QoS(1));
+      "/api/external/get/hazard_status", rclcpp::QoS(1));
     pub_operation_mode_ = node_->create_publisher<OperationModeState>(
       "/api/operation_mode/state", qos);
 

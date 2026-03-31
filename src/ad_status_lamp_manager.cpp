@@ -38,9 +38,9 @@ AdStatusLampManager::AdStatusLampManager(const rclcpp::NodeOptions & options = r
     std::bind(&AdStatusLampManager::callbackRoutingStateMessage, this, std::placeholders::_1)
   );
 
-  // HazardStatus for EM Holding
-  sub_hazard_status_ = this->create_subscription<autoware_system_msgs::msg::HazardStatusStamped>(
-    "/system/emergency/hazard_status",
+  // HazardStatus for EM Holding (/api/external/get/hazard_status)
+  sub_hazard_status_ = this->create_subscription<tier4_external_api_msgs::msg::HazardStatusStamped>(
+    "/api/external/get/hazard_status",
     rclcpp::QoS{1},
     std::bind(&AdStatusLampManager::callbackHazardStatusMessage, this, std::placeholders::_1)
   );
@@ -151,7 +151,7 @@ void AdStatusLampManager::callbackRoutingStateMessage(
 }
 
 void AdStatusLampManager::callbackHazardStatusMessage(
-  const autoware_system_msgs::msg::HazardStatusStamped::ConstSharedPtr msg)
+  const tier4_external_api_msgs::msg::HazardStatusStamped::ConstSharedPtr msg)
 {
   em_holding_ = msg->status.emergency_holding;
 
